@@ -1,0 +1,392 @@
+using System;
+using System.Reflection.Metadata;
+using System.Threading;
+using System.Threading.Tasks;
+using Telegram.Bot;
+using Telegram.Bot.Types;
+using Telegram.Bot.Types.ReplyMarkups;
+using Telegram.Bot.Exceptions;
+using System.Collections.Generic;
+using System.Linq;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
+using static System.Net.Mime.MediaTypeNames;
+
+
+using Telegram.Bot;
+using Telegram.Bot.Exceptions;
+using Telegram.Bots.Extensions.Polling;
+using Telegram.Bot.Types;
+using Telegram.Bot.Types.Enums;
+using Telegram.Bot.Types.ReplyMarkups;
+using Telegram.Bot.Polling;
+
+
+string api = "5883189016:AAE6zkpFWqyt2y4DlGbFxwv1LYo3SO8oHkc";
+var botClient = new TelegramBotClient(api);
+
+using var cts = new CancellationTokenSource();
+
+var receiverOptions = new ReceiverOptions
+{
+    AllowedUpdates = { }
+};
+
+botClient.StartReceiving(
+    HandleUpdatesAsync,
+    HandleErrorAsync,
+    receiverOptions,
+    cancellationToken: cts.Token);
+
+var me = await botClient.GetMeAsync();
+
+Console.WriteLine($"Бот запущен @{me.Username}");
+Console.ReadLine();
+
+cts.Cancel();
+
+async Task HandleUpdatesAsync(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
+{
+      
+
+    if (update.Type == UpdateType.Message && update?.Message?.Text != null)
+    {
+        var message = update.Message;
+        await HandleMessage(botClient, update.Message);
+        return;
+    }
+
+    if (update.Type == UpdateType.CallbackQuery)
+    {
+        await HandleCallbackQuery(botClient, update.CallbackQuery);
+        return;
+    }
+}
+
+async Task HandleMessage(ITelegramBotClient botClient, Message message)
+{
+    Console.WriteLine($"{message.Chat.Username} |{message.Chat.LastName} | {message.Chat.FirstName}  | {message.Text} ");
+    //  Приветствие
+    if (message.Text.ToLower().Contains("здаров") || message.Text.ToLower().Contains("прив") || message.Text.ToLower().Contains("здрав") || message.Text.ToLower().Contains("хай"))
+    {
+        await botClient.SendTextMessageAsync(message.Chat.Id, "Привет, абитуриент!Нажми /start чтобы начать");
+        return;
+    }
+    if (message.Text.ToLower().Contains("hello") || message.Text.ToLower().Contains("hey") || message.Text.ToLower().Contains("hay") || message.Text.ToLower().Contains("good "))
+    {
+        await botClient.SendTextMessageAsync(message.Chat.Id, "Hello, student! Click /start for start");
+        return;
+    }
+    // Маты
+    if (message.Text.ToLower().Contains("хуй") || message.Text.ToLower().Contains("пизд") || message.Text.ToLower().Contains("нах") || message.Text.ToLower().Contains("fuck") || message.Text.ToLower().Contains("бля") || message.Text.ToLower().Contains("здец") || message.Text.ToLower().Contains("заеб"))
+    {
+        await botClient.SendTextMessageAsync(message.Chat.Id, "Не ругайся 🤫");
+        return;
+    }
+    // Меню
+    if (message.Text.ToLower().Contains("меню") || message.Text == "/start" || message.Text == "/menu")
+    {
+
+        ReplyKeyboardMarkup keyboard = new(new[]
+        {
+                    new KeyboardButton[] { "👨‍💻 Специальности", "💰 Стипендия" },
+                    new KeyboardButton[] { "📄 Документы", "🗺 Карта" },
+                    new KeyboardButton[] { "🇷🇺 ВУЦ","🎯 Целевое обучение"  },
+                    new KeyboardButton[] { "📚 Подготовка к ЕГЭ","🧮 Калькулятор ЕГЭ"  },
+                    new KeyboardButton[] { "📋 Конкурсные списки"  },
+                    new KeyboardButton[] { "🇬🇧 Foreign student", "📞 Контакты" }
+
+                    })
+        {
+            ResizeKeyboard = true
+        };
+        await botClient.SendTextMessageAsync(message.Chat.Id, "Меню:", replyMarkup: keyboard);
+
+        return;
+    }
+
+    // Специальности
+    if (message.Text.ToLower().Contains("специальности"))
+    {
+        ReplyKeyboardMarkup keyboard = new(new[]
+                {
+            new KeyboardButton[] {"Очная"},
+            new KeyboardButton[] {"Заочная"},
+            new KeyboardButton[] { "⏪ Назад в меню" }
+        })
+        {
+            ResizeKeyboard = true
+        };
+        await botClient.SendTextMessageAsync(message.Chat.Id, "Выберите форму обучения:", replyMarkup: keyboard);
+
+        return;
+    }
+    if (message.Text == "Очная")
+    {
+        var hyperlinkKeyboard = new Telegram.Bot.Types.ReplyMarkups.InlineKeyboardMarkup(Telegram.Bot.Types.ReplyMarkups.InlineKeyboardButton.WithUrl("Нажми на меня для перехода на ссылку",
+            "https://www.sevsu.ru/specialnosti/?form=%D0%9E%D1%87%D0%BD%D0%B0%D1%8F&PAGEN_3=1"));
+        await botClient.SendTextMessageAsync(message.Chat.Id, "Очные Специальности:", replyMarkup: hyperlinkKeyboard);
+        //await botClient.SendTextMessageAsync(message.Chat.Id, " ", replyMarkup: );
+        return;
+    }
+    if (message.Text == "Заочная")
+    {
+        var hyperlinkKeyboard = new Telegram.Bot.Types.ReplyMarkups.InlineKeyboardMarkup(Telegram.Bot.Types.ReplyMarkups.InlineKeyboardButton.WithUrl("Нажми на меня для перехода на ссылку",
+            "https://www.sevsu.ru/specialnosti/?form=%D0%97%D0%B0%D0%BE%D1%87%D0%BD%D0%B0%D1%8F&PAGEN_3=1"));
+        await botClient.SendTextMessageAsync(message.Chat.Id, "Заочные Специальности:", replyMarkup: hyperlinkKeyboard);
+        return;
+    }
+    // Стипендия
+    if (message.Text.ToLower().Contains("стипендия"))
+    {
+        await botClient.SendTextMessageAsync(message.Chat.Id, "В Университете предусмотрены следующие виды стипендий:\n- Государственная академическая стипендия студентам;" +
+            "\n\n- Государственная социальная стипендия студентам;\n\n- Государственные стипендии аспирантам;\n\n- Стипендии Президента Российской Федерации и стипендии Правительства Российской Федерации;" +
+            "\n\n- Государственная академическая стипендия в повышенной размере (далее повышенная государственная академическая стипендия);" +
+            "\n\n- Государственная социальная стипендия в повышенном размере студентам первого и второго курсов (далее – повышенная государственная социальная стипендия);" +
+            "\n\n- Стипендии, в том числе именные, назначаемые обучающимся Университета юридическими лицами или физическими лицами, в том числе направившими их на обучение;" +
+            "\n\n- Повышенная стипендия студентам первого года обучения;\n\n- Стипендия слушателям подготовительных отделений.");
+        return;
+    }
+
+    // Документы
+    if (message.Text.ToLower().Contains("документы"))
+    {
+        ReplyKeyboardMarkup keyboard = new(new[]
+                 {
+            new KeyboardButton[] {"Лично в университете"},
+            new KeyboardButton[] {"Личный кабинет Абитуриента"},
+            new KeyboardButton[] {"Через Госуслуги"},
+            new KeyboardButton[] {"Почтовая связь"},
+            new KeyboardButton[] {"По электронной почте"},
+            new KeyboardButton[] { "⏪Назад в меню" }
+        })
+        {
+            ResizeKeyboard = true
+        };
+        await botClient.SendTextMessageAsync(message.Chat.Id, "Выберите удобный способ подачи документов:", replyMarkup: keyboard);
+        return;
+    }
+    if (message.Text == "Лично в университете")
+    {
+        await botClient.SendTextMessageAsync(message.Chat.Id, "Прием документов, необходимых для поступления, проводится в здании СевГУ по адресу: г. Севастополь, ул. Университетская, д. 33, 1 этаж.\n\nДОКУМЕНТЫ ДЛЯ ПОДАЧИ:\n\n- документ о ранее полученном образовательном (образовательно-квалификационном) уровне и приложение к нему (диплом либо аттестат) — 2 копии;\n- документ, удостоверяющий личность и гражданство (паспорт) — 2 копии;\n- Медицинская справка по форме 086-у или ее копия (для направлений и специальностей подготовки, указанных в прилагаемом перечне);\n- Фотография цветная размером 3 х 4 см  - 2 шт. для поступающих на высшее образование на основании вступительных испытаний, 4 шт - для поступающих  в Морской колледж;\n- СНИЛС —1 копия.\nДля несовершеннолетних абитуриентов бланк согласия на обработку персональных данных дополнительно подписывает родитель (законный представитель) с приложением копий документов о родстве.");
+        return;
+    }
+    if (message.Text == "Личный кабинет Абитуриента")
+    {
+        var hyperlinkKeyboard = new Telegram.Bot.Types.ReplyMarkups.InlineKeyboardMarkup(Telegram.Bot.Types.ReplyMarkups.InlineKeyboardButton.WithUrl("Нажми на меня для перехода на ссылку",
+            "https://www.sevsu.ru/admission/item/9398-lk"));
+        await botClient.SendTextMessageAsync(message.Chat.Id, "Подача документов через Личный кабинет Абитуриента", replyMarkup: hyperlinkKeyboard);
+        return;
+    }
+    if (message.Text == "Через Госуслуги")
+    {
+        await botClient.SendTextMessageAsync(message.Chat.Id, "Данный вид подачи документов доступен только для поступающих на бакалавриат, специалитет.\n\n\nНа едином портале Госуслуги можно подать документы, воспользовавшись соответствующей услугой с 20 июня 2023 года");
+        return;
+    }
+    if (message.Text == "Почтовая связь")
+    {
+        var hyperlinkKeyboard = new Telegram.Bot.Types.ReplyMarkups.InlineKeyboardMarkup(Telegram.Bot.Types.ReplyMarkups.InlineKeyboardButton.WithUrl("Нажми на меня для перехода на ссылку",
+            "https://www.sevsu.ru/admission/item/9540-oper"));
+        await botClient.SendTextMessageAsync(message.Chat.Id, "Подача документов почтовой связью:", replyMarkup: hyperlinkKeyboard);
+        return;
+    }
+    if (message.Text == "По электронной почте")
+    {
+        var hyperlinkKeyboard = new Telegram.Bot.Types.ReplyMarkups.InlineKeyboardMarkup(Telegram.Bot.Types.ReplyMarkups.InlineKeyboardButton.WithUrl("Нажми на меня для перехода на ссылку",
+            "https://www.sevsu.ru/admission/item/9396-email-vysh"));
+        await botClient.SendTextMessageAsync(message.Chat.Id, "Подача документов по электронной почте:", replyMarkup: hyperlinkKeyboard);
+        return;
+    }
+
+
+    // Карта
+
+    if (message.Text.ToLower().Contains("карта"))
+    {
+
+        await botClient.SendPhotoAsync(message.Chat.Id, "https://ria82.ru/sites/default/files/articles/23922/galery/sevgu3.jpeg");
+        await botClient.SendVenueAsync(message.Chat.Id, 44.59491f, 33.47578f, "SevSU", "Universitetskaya Street 33, Sevastopol,Russia");
+        return;
+    }
+
+
+    // ВУЦ
+    if (message.Text.ToLower().Contains("вуц"))
+    {
+
+        InlineKeyboardMarkup keyboard = new(new[]
+        {
+            new[]
+            {
+                InlineKeyboardButton.WithCallbackData("Информация", "info"),
+                InlineKeyboardButton.WithCallbackData("Начальник", "nach"),
+            },
+            new[]
+            {
+                InlineKeyboardButton.WithCallbackData("Документы", "doc"),
+                InlineKeyboardButton.WithCallbackData("Специальности", "spez"),
+            },
+            new[]
+            {
+                InlineKeyboardButton.WithCallbackData("⏪ Назад в меню","nazad"),
+            }
+        });
+
+        await botClient.SendTextMessageAsync(message.Chat.Id, "Выберите раздел:", replyMarkup: keyboard);
+        return;
+    }
+
+
+   
+    // Целевое обучение
+    if (message.Text.ToLower().Contains("целевое обучение"))
+    {
+        var hyperlinkKeyboard = new Telegram.Bot.Types.ReplyMarkups.InlineKeyboardMarkup(Telegram.Bot.Types.ReplyMarkups.InlineKeyboardButton.WithUrl("Нажми на меня для перехода на ссылку",
+            "https://www.sevsu.ru/admission/item/5719-priem-na-tselevoe-obuchenie/"));
+        await botClient.SendTextMessageAsync(message.Chat.Id, "Целевое обучение:", replyMarkup: hyperlinkKeyboard);
+        return;
+    }
+
+    // Подготовка к ЕГЭ
+    if (message.Text.ToLower().Contains("подготовка к егэ"))
+    {
+        ReplyKeyboardMarkup keyboard = new(new[]
+                 {
+            new KeyboardButton[] {"11 класс и СПО"},
+            new KeyboardButton[] {"10 класс"},
+            new KeyboardButton[] {"9 класс"},
+            new KeyboardButton[] {"Лицей-предуниверсарий"},
+            new KeyboardButton[] {"Сдача вступительных испытаний для СПО:"},
+            new KeyboardButton[] { "⏪Назад в меню" }
+        })
+        {
+            ResizeKeyboard = true
+        };
+        await botClient.SendTextMessageAsync(message.Chat.Id, "Выберите программу подготовки:", replyMarkup: keyboard);
+        return;
+    }
+    if (message.Text == "11 класс и СПО")
+    {
+        await botClient.SendTextMessageAsync(message.Chat.Id, "Для обучающихся 11-х классов и выпускников СПО:\n\n- Курс «Стандарт 11»\nПродолжительность: 8 месяцев. Дата начала занятий: октябрь 2022 года. Стоимость: 24 000,00\n\n- Курс «Выходного дня»\nПродолжительность: 8 месяцев. Дата начала занятий: октябрь 2022 года. Стоимость: 24 000,00\n\n- Курс «Интенсив»\nПродолжительность: 4 месяца. Дата начала занятий: январь 2023 года. Стоимость: 15 000,00\n\nКурс «Экспресс»\nПродолжительность: 3 месяца. Дата начала занятий: март 2023 года. Стоимость: 10 000,00");
+        return;
+    }
+    if (message.Text == "10 класс")
+    {
+        await botClient.SendTextMessageAsync(message.Chat.Id, "Курс «Стандарт 10»\n\nПродолжительность: 8 месяцев. Дата начала занятий: октябрь 2022 года. Стоимость: 18 400,00");
+        return;
+    }
+    if (message.Text == "9 класс")
+    {
+        await botClient.SendTextMessageAsync(message.Chat.Id, "Курс «Стандарт 9»\n\nПродолжительность: 8 месяцев. Дата начала занятий: октябрь 2022. Стоимость: 18 400,00");
+        return;
+    }
+    if (message.Text == "Лицей-предуниверсарий")
+    {
+        await botClient.SendTextMessageAsync(message.Chat.Id, "\nПоступление в Лицей-предуниверсария\n\nПродолжительность: 2 недели. Дата начала занятий: июль 2023. Стоимость: 8 000,00   ");
+        return;
+    }
+    if (message.Text == "Сдача вступительных испытаний для СПО:")
+    {
+        await botClient.SendTextMessageAsync(message.Chat.Id, "Курс «Летний экспресс»\n\nПродолжительность: 2 недели. Дата начала занятий: июль 2023 года. Стоимость: 8 000,00");
+        return;
+    }
+
+    // Калькулятор ЕГЭ
+    if (message.Text.ToLower().Contains("калькулятор егэ"))
+    {
+        var hyperlinkKeyboard = new Telegram.Bot.Types.ReplyMarkups.InlineKeyboardMarkup(Telegram.Bot.Types.ReplyMarkups.InlineKeyboardButton.WithUrl("Нажми на меня для перехода на ссылку",
+            "https://www.sevsu.ru/specialnosti/calculator/"));
+        await botClient.SendTextMessageAsync(message.Chat.Id, "Калькулятор ЕГЭ:", replyMarkup: hyperlinkKeyboard);
+        return;
+    }
+
+    // Конкурсные списки
+    if (message.Text.ToLower().Contains("конкурсные списки"))
+    {
+        var hyperlinkKeyboard = new Telegram.Bot.Types.ReplyMarkups.InlineKeyboardMarkup(Telegram.Bot.Types.ReplyMarkups.InlineKeyboardButton.WithUrl("Нажми на меня для перехода на ссылку",
+            "https://www.sevsu.ru/uni/ekran/"));
+        await botClient.SendTextMessageAsync(message.Chat.Id, "Конкурсные списки:",replyMarkup:hyperlinkKeyboard);
+        return;
+    }
+    // Foreign student Иностранным гражданам
+    if (message.Text.ToLower().Contains("foreign student"))
+    {
+        await botClient.SendTextMessageAsync(message.Chat.Id, " \n\nMake your dream come true with Sevastopol State University! Learn from the sea!\nWe invite you to enroll in Sevastopol State University!\n\nThere are 13 institutes and 1 college in our university. 145 educational programs and 11 programs in English are open for students.\n\nApplicants who do not speak Russian can take preparatory courses, which are conducted by qualified teaching staff.\n\nFor international students, we provide a hostel on the seashore.\n\n\nIf you didn't find what you wanted on the site, call or email us. we will be happy to answer any questions and try to find the perfect program for you.\n\nSergey Vladimirovich Barashkin, Department for Work with Foreign Students:\n\n+7 (978) 830-67-82, e-mail: svbarashkin@sevsu.ru");
+        return;
+    }
+    // Контакты
+    if (message.Text.ToLower().Contains("контакты") || message.Text.ToLower().Contains("/contact"))
+    {
+        await botClient.SendTextMessageAsync(message.Chat.Id, "Основная контактная информация\nПриёмная комиссия\nТелефон:\n+7 (8692) 22-29-11\nE-mail:\npriem@sevsu.ru\nОфициальный сайт:\nsevsu.ru\nАдрес:\n299053, г. Севастополь, ул. Университетская, 33, ауд. В-103\nРежим работы:\nпн.-пт.: с 9:00 до 16:00");
+        return;
+    }
+
+    await botClient.SendTextMessageAsync(message.Chat.Id, $"Я не понимаю людской🤯\nВыберите команду из меню /menu\nили свяжитесь с нами /contact");
+}
+
+
+
+
+async Task HandleCallbackQuery(ITelegramBotClient botClient, CallbackQuery callbackQuery)
+{
+  
+    await botClient.DeleteMessageAsync(callbackQuery.Message.Chat.Id, callbackQuery.Message.MessageId);
+
+    if (callbackQuery.Data.StartsWith("info"))
+    {
+
+        await botClient.SendTextMessageAsync(
+            callbackQuery.Message.Chat.Id,
+            "Военный учебный центр при ФГАОУ ВО «Севастопольский государственный университет» создан распоряжением Председателя Правительства Российской Федерации от 13 марта 2019 года № 427-р «О создании военных учебных центров при федеральных государственных образовательных организациях высшего образования»."
+        );
+        
+        return;
+    }
+    if (callbackQuery.Data.StartsWith("nach"))
+    {
+        var hyperlinkKeyboard = new Telegram.Bot.Types.ReplyMarkups.InlineKeyboardMarkup(Telegram.Bot.Types.ReplyMarkups.InlineKeyboardButton.WithUrl("Нажми на меня для перехода на ссылку",
+            ""));
+        await botClient.SendPhotoAsync(callbackQuery.Message.Chat.Id, photo: "https://www.sevsu.ru/upload/iblock/90b/a4m71dxj9x2blwjc222xfbtdmswhjd85.jpg", caption: "");
+        await botClient.SendTextMessageAsync(
+            callbackQuery.Message.Chat.Id,
+            "Начальник Военного учебного центра при ФГАОУ ВО \"Севастопольский государственный университет\" капитан 1 ранга Иванищев Сергей Николаевич\n\n+ 7 (8692) 41-77-41 (1167)\n\nSNIvanischev@sevsu.ru\n\nул. Курчатова 7, Химический корпус, каб. № 210"
+        );
+        return;
+    }
+    if (callbackQuery.Data.StartsWith("doc"))
+    {
+        await botClient.SendTextMessageAsync(
+            callbackQuery.Message.Chat.Id,
+            "Перечень документов для участия в конкурсном отборе (прилагаются к заявлению):\n- Заявление на имя ректора СевГУ.\n\n- Копия документа, подтверждающего личность и гражданство (паспорт, стр. 2,3,5,6).\n\n- Копия свидетельства о рождении.\n\n- Автобиография (рукописная + печатная).\n\n- Фото без головного убора, черно-белое, без уголка 4,5 х 6 см – 3 шт.\n\n- При себе иметь приписное удостоверение (для отслуживших – военный билет) и студенческий билет."
+        );
+        return;
+    }
+    if (callbackQuery.Data.StartsWith("spez"))
+    {
+        await botClient.SendTextMessageAsync(
+            callbackQuery.Message.Chat.Id,
+            "Военно-учетные специальности:\n1. Эксплуатация и ремонт дизельных энергетических установок надводных кораблей.\n\n2. Эксплуатация и ремонт электроэнергетических систем надводных кораблей.\n\n3. Ведение поисковых, аварийно-спасательных, подъемных и водолазных работ.\n\n4. Стрелковые командир отделения.\n\n5. Гранатометные (гранатометчик ручных противотанковых гранатометов)."
+        );
+        return;
+    }
+    if (callbackQuery.Data.StartsWith("nazad"))
+    {
+        await botClient.SendTextMessageAsync(
+            callbackQuery.Message.Chat.Id,
+            "Меню: /menu");
+        return;
+    }
+    return;
+}
+
+Task HandleErrorAsync(ITelegramBotClient client, Exception exception, CancellationToken cancellationToken)
+{
+    var ErrorMessage = exception switch
+    {
+        ApiRequestException apiRequestException
+            => $"Ошибка телеграм АПИ:\n{apiRequestException.ErrorCode}\n{apiRequestException.Message}",
+        _ => exception.ToString()
+    };
+    Console.WriteLine(ErrorMessage);
+    return Task.CompletedTask;
+}
